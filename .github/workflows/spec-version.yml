@@ -1,0 +1,22 @@
+name: Open an issue if Specification version has been bumped
+
+on:
+  schedule:
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-spec-version:
+    name: Open an issue when spec version bumps
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/github-script@v5
+      with:
+        script: |
+          const release = await octokit.rest.repos.getLatestRelease({
+            "theupdateframework"
+            "specification",
+          });
+          console.log(release)
+          console.log("TODO...")
+
