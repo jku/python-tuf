@@ -41,7 +41,7 @@ jobs:
 
     steps:
       - name: Checkout TUF
-        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+        uses: actions/checkout@dcd71f646680f2efd8db4afa5ad64fdcba30e748
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@7f80679172b057fc5e90d70d197929d454754a5a
