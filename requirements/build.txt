@@ -1,5 +1,5 @@
 # The build and tox versions specified here are also used as constraints
 # during CI and CD Github workflows
-build==1.2.1
-tox==4.1.2
+build==1.2.2
+tox==4.20.0
 hatchling==1.25.0
