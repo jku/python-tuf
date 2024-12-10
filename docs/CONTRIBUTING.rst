@@ -39,21 +39,18 @@ you need debug/run outside ``tox``.
 Unit tests
 ----------
 
-More specifically, the Update Framework's test suite can be executed by invoking
-the test aggregation script inside the *tests* subdirectory. ``tuf`` and its
-dependencies must already be installed.
+test suite can be executed directly as well (in this case the environment managed by tox is
+not used):
 ::
 
-     cd tests/
-     python3 aggregate_tests.py
+     python3 -m unittest
 
 
 Individual tests can also be executed. Optional ``-v`` flags can be added to
 increase log level up to DEBUG (``-vvvv``).
 ::
 
-     cd tests/
-     python3 test_updater_ng.py -v
+     python3 tests/test_updater_ng.py -v
 
 
 Coverage
@@ -64,8 +61,7 @@ invoked with the ``coverage`` tool (requires installation of ``coverage``, e.g.
 via PyPI).
 ::
 
-     cd tests/
-     coverage run aggregate_tests.py && coverage report
+     coverage run -m unittest
 
 
 Auto-formatting
