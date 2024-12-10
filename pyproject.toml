@@ -154,3 +154,7 @@ exclude_also = [
     # imports for mypy only
     "if TYPE_CHECKING",
 ]
+[tool.coverage.run]
+omit = [
+    "tests/*",
+]
