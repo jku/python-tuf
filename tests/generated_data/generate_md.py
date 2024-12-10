@@ -56,9 +56,6 @@ for index in range(len(keyids)):
     signers.append(CryptoSigner(private_key, key))
 
 EXPIRY = datetime(2050, 1, 1, tzinfo=timezone.utc)
-OUT_DIR = "generated_data/ed25519_metadata"
-if not os.path.exists(OUT_DIR):
-    os.mkdir(OUT_DIR)
 
 SERIALIZER = JSONSerializer()
 
@@ -103,7 +100,12 @@ def generate_all_files(
     for i, md in enumerate([md_root, md_timestamp, md_snapshot, md_targets]):
         assert isinstance(md, Metadata)
         md.sign(signers[i])
-        path = os.path.join(OUT_DIR, f"{md.signed.type}_with_ed25519.json")
+        path = os.path.join(
+            utils.TESTS_DIR,
+            "generated_data",
+            "ed25519_metadata",
+            f"{md.signed.type}_with_ed25519.json",
+        )
         if verify:
             verify_generation(md, path)
 
