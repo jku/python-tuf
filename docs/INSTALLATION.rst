@@ -25,14 +25,13 @@ algorithms, and more performant backends. Opt-in is available via
 
 .. note::
 
-   Please consult with underlying crypto backend installation docs --
-   `cryptography <https://cryptography.io/en/latest/installation/>`_ and
-   `pynacl <https://pynacl.readthedocs.io/en/latest/install/>`_  --
+   Please consult with underlying crypto backend installation docs. e.g.
+   `cryptography <https://cryptography.io/en/latest/installation/>`_
    for possible system dependencies.
 
 ::
 
-   python3 -m pip securesystemslib[crypto,pynacl] tuf
+   python3 -m pip securesystemslib[crypto] tuf
 
 
 Install for development
