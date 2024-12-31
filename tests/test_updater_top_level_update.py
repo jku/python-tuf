@@ -732,6 +732,7 @@ class TestRefresh(unittest.TestCase):
         wrapped_open.assert_has_calls(
             [
                 call(os.path.join(self.metadata_dir, "root.json"), "rb"),
+                call(os.path.join(self.metadata_dir, "root_history/2.root.json"), "rb"),
                 call(os.path.join(self.metadata_dir, "timestamp.json"), "rb"),
                 call(os.path.join(self.metadata_dir, "snapshot.json"), "rb"),
                 call(os.path.join(self.metadata_dir, "targets.json"), "rb"),
