@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import builtins
 import datetime
-import logging
 import os
 import sys
 import tempfile
@@ -72,13 +71,13 @@ class TestRefresh(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
 
-    def _run_refresh(self, skip_bootstrap:bool=False) -> Updater:
+    def _run_refresh(self, skip_bootstrap: bool = False) -> Updater:
         """Create a new Updater instance and refresh"""
         updater = self._init_updater(skip_bootstrap)
         updater.refresh()
         return updater
 
-    def _init_updater(self, skip_bootstrap:bool=False) -> Updater:
+    def _init_updater(self, skip_bootstrap: bool = False) -> Updater:
         """Create a new Updater instance"""
         if self.dump_dir is not None:
             self.sim.write()
@@ -89,7 +88,7 @@ class TestRefresh(unittest.TestCase):
             self.targets_dir,
             "https://example.com/targets/",
             self.sim,
-            bootstrap=None if skip_bootstrap else self.sim.signed_roots[0]
+            bootstrap=None if skip_bootstrap else self.sim.signed_roots[0],
         )
 
     def _assert_files_exist(self, roles: Iterable[str]) -> None:
@@ -706,9 +705,10 @@ class TestRefresh(unittest.TestCase):
         updater.get_targetinfo("non_existent_target")
 
         # Test that metadata is loaded from cache and not downloaded
+        root_dir = os.path.join(self.metadata_dir, "root_history")
         wrapped_open.assert_has_calls(
             [
-                call(os.path.join(self.metadata_dir, "root_history/2.root.json"), "rb"),
+                call(os.path.join(root_dir, "2.root.json"), "rb"),
                 call(os.path.join(self.metadata_dir, "timestamp.json"), "rb"),
                 call(os.path.join(self.metadata_dir, "snapshot.json"), "rb"),
                 call(os.path.join(self.metadata_dir, "targets.json"), "rb"),
@@ -718,7 +718,6 @@ class TestRefresh(unittest.TestCase):
 
         expected_calls = [("root", 2), ("timestamp", None)]
         self.assertListEqual(self.sim.fetch_tracker.metadata, expected_calls)
-
 
     @patch.object(builtins, "open", wraps=builtins.open)
     def test_intermediate_root_cache(self, wrapped_open: MagicMock) -> None:
@@ -733,17 +732,25 @@ class TestRefresh(unittest.TestCase):
         self._run_refresh()
 
         # assert that cache lookups happened but data was downloaded from remote
+        root_dir = os.path.join(self.metadata_dir, "root_history")
         wrapped_open.assert_has_calls(
             [
-                call(os.path.join(self.metadata_dir, "root_history/2.root.json"), "rb"),
-                call(os.path.join(self.metadata_dir, "root_history/3.root.json"), "rb"),
-                call(os.path.join(self.metadata_dir, "root_history/4.root.json"), "rb"),
+                call(os.path.join(root_dir, "2.root.json"), "rb"),
+                call(os.path.join(root_dir, "3.root.json"), "rb"),
+                call(os.path.join(root_dir, "4.root.json"), "rb"),
                 call(os.path.join(self.metadata_dir, "timestamp.json"), "rb"),
                 call(os.path.join(self.metadata_dir, "snapshot.json"), "rb"),
                 call(os.path.join(self.metadata_dir, "targets.json"), "rb"),
             ]
         )
-        expected_calls = [("root", 2), ("root", 3), ("root", 4), ("timestamp", None), ("snapshot", 1), ("targets", 1)]
+        expected_calls = [
+            ("root", 2),
+            ("root", 3),
+            ("root", 4),
+            ("timestamp", None),
+            ("snapshot", 1),
+            ("targets", 1),
+        ]
         self.assertListEqual(self.sim.fetch_tracker.metadata, expected_calls)
 
         # Clear statistics for open() calls and metadata requests
@@ -754,9 +761,9 @@ class TestRefresh(unittest.TestCase):
         self._run_refresh()
         wrapped_open.assert_has_calls(
             [
-                call(os.path.join(self.metadata_dir, "root_history/2.root.json"), "rb"),
-                call(os.path.join(self.metadata_dir, "root_history/3.root.json"), "rb"),
-                call(os.path.join(self.metadata_dir, "root_history/4.root.json"), "rb"),
+                call(os.path.join(root_dir, "2.root.json"), "rb"),
+                call(os.path.join(root_dir, "3.root.json"), "rb"),
+                call(os.path.join(root_dir, "4.root.json"), "rb"),
                 call(os.path.join(self.metadata_dir, "timestamp.json"), "rb"),
                 call(os.path.join(self.metadata_dir, "snapshot.json"), "rb"),
                 call(os.path.join(self.metadata_dir, "targets.json"), "rb"),
@@ -777,7 +784,9 @@ class TestRefresh(unittest.TestCase):
         self._run_refresh()
 
         # Modify cached intermediate root v2 so that it's no longer signed correctly
-        root_path = os.path.join(self.metadata_dir, "root_history", "2.root.json")
+        root_path = os.path.join(
+            self.metadata_dir, "root_history", "2.root.json"
+        )
         md = Metadata.from_file(root_path)
         md.signatures.clear()
         md.to_file(root_path)
