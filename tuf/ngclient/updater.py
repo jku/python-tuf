@@ -343,50 +343,53 @@ class Updater:
     def _load_root(self) -> None:
         """Load root metadata.
 
-        Sequentially load and persist every newer root metadata
-        version available, either locally or on the remote.
+        Sequentially load newer root metadata versions. First try to load from
+        local cache and if that does not work, from the remote repository.
+
+        If metadata is loaded from remote repository, store it in local cache.
         """
 
         # Update the root role
         lower_bound = self._trusted_set.root.version + 1
         upper_bound = lower_bound + self.config.max_root_rotations
 
-        for next_version in range(lower_bound, upper_bound):
-            # look for next_version in local cache
-            try:
-                root_path = os.path.join(
-                    self._dir, "root_history", f"{next_version}.root.json"
-                )
-                with open(root_path, "rb") as f:
-                    self._trusted_set.update_root(f.read())
-                continue
-            except (OSError, exceptions.RepositoryError) as e:
-                # this root did not exist locally or is invalid
-                logger.debug("Local root is not valid: %s", e)
+        try:
+            for next_version in range(lower_bound, upper_bound):
+                # look for next_version in local cache
+                try:
+                    root_path = os.path.join(
+                        self._dir, "root_history", f"{next_version}.root.json"
+                    )
+                    with open(root_path, "rb") as f:
+                        self._trusted_set.update_root(f.read())
+                    continue
+                except (OSError, exceptions.RepositoryError) as e:
+                    # this root did not exist locally or is invalid
+                    logger.debug("Local root is not valid: %s", e)
 
-            # next_version was not found locally, try remote
-            try:
-                data = self._download_metadata(
-                    Root.type,
-                    self.config.root_max_length,
-                    next_version,
-                )
-                self._trusted_set.update_root(data)
-                self._persist_root(next_version, data)
+                # next_version was not found locally, try remote
+                try:
+                    data = self._download_metadata(
+                        Root.type,
+                        self.config.root_max_length,
+                        next_version,
+                    )
+                    self._trusted_set.update_root(data)
+                    self._persist_root(next_version, data)
 
-            except exceptions.DownloadHTTPError as exception:
-                if exception.status_code not in {403, 404}:
-                    raise
-                # 404/403 means current root is newest available
-                break
-
-        # Make sure there's a non-versioned root.json
-        linkname = os.path.join(self._dir, "root.json")
-        version = self._trusted_set.root.version
-        current = os.path.join("root_history", f"{version}.root.json")
-        with contextlib.suppress(FileNotFoundError):
-            os.remove(linkname)
-        os.symlink(current, linkname)
+                except exceptions.DownloadHTTPError as exception:
+                    if exception.status_code not in {403, 404}:
+                        raise
+                    # 404/403 means current root is newest available
+                    break
+        finally:
+            # Make sure the non-versioned root.json links to current version
+            linkname = os.path.join(self._dir, "root.json")
+            version = self._trusted_set.root.version
+            current = os.path.join("root_history", f"{version}.root.json")
+            with contextlib.suppress(FileNotFoundError):
+                os.remove(linkname)
+            os.symlink(current, linkname)
 
     def _load_timestamp(self) -> None:
         """Load local and remote timestamp metadata."""
