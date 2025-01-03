@@ -696,7 +696,7 @@ class TestRefresh(unittest.TestCase):
         updater = self._run_refresh()
         updater.get_targetinfo("non_existent_target")
 
-        # Clear statistics for calls and metadata requests
+        # Clear statistics for open() calls and metadata requests
         wrapped_open.reset_mock()
         self.sim.fetch_tracker.metadata.clear()
 
@@ -717,6 +717,87 @@ class TestRefresh(unittest.TestCase):
         )
 
         expected_calls = [("root", 2), ("timestamp", None)]
+        self.assertListEqual(self.sim.fetch_tracker.metadata, expected_calls)
+
+
+    @patch.object(builtins, "open", wraps=builtins.open)
+    def test_intermediate_root_cache(self, wrapped_open: MagicMock) -> None:
+        """Test that refresh uses the intermediate roots from cache"""
+        # Add root versions 2, 3
+        self.sim.root.version += 1
+        self.sim.publish_root()
+        self.sim.root.version += 1
+        self.sim.publish_root()
+
+        # Make a successful update of valid metadata which stores it in cache
+        self._run_refresh()
+
+        # assert that cache lookups happened but data was downloaded from remote
+        wrapped_open.assert_has_calls(
+            [
+                call(os.path.join(self.metadata_dir, "root_history/2.root.json"), "rb"),
+                call(os.path.join(self.metadata_dir, "root_history/3.root.json"), "rb"),
+                call(os.path.join(self.metadata_dir, "root_history/4.root.json"), "rb"),
+                call(os.path.join(self.metadata_dir, "timestamp.json"), "rb"),
+                call(os.path.join(self.metadata_dir, "snapshot.json"), "rb"),
+                call(os.path.join(self.metadata_dir, "targets.json"), "rb"),
+            ]
+        )
+        expected_calls = [("root", 2), ("root", 3), ("root", 4), ("timestamp", None), ("snapshot", 1), ("targets", 1)]
+        self.assertListEqual(self.sim.fetch_tracker.metadata, expected_calls)
+
+        # Clear statistics for open() calls and metadata requests
+        wrapped_open.reset_mock()
+        self.sim.fetch_tracker.metadata.clear()
+
+        # Run update again, assert that metadata from cache was used (including intermediate roots)
+        self._run_refresh()
+        wrapped_open.assert_has_calls(
+            [
+                call(os.path.join(self.metadata_dir, "root_history/2.root.json"), "rb"),
+                call(os.path.join(self.metadata_dir, "root_history/3.root.json"), "rb"),
+                call(os.path.join(self.metadata_dir, "root_history/4.root.json"), "rb"),
+                call(os.path.join(self.metadata_dir, "timestamp.json"), "rb"),
+                call(os.path.join(self.metadata_dir, "snapshot.json"), "rb"),
+                call(os.path.join(self.metadata_dir, "targets.json"), "rb"),
+            ]
+        )
+        expected_calls = [("root", 4), ("timestamp", None)]
+        self.assertListEqual(self.sim.fetch_tracker.metadata, expected_calls)
+
+    def test_intermediate_root_cache_poisoning(self) -> None:
+        """Test that refresh works as expected when intermediate roots in cache are poisoned"""
+        # Add root versions 2, 3
+        self.sim.root.version += 1
+        self.sim.publish_root()
+        self.sim.root.version += 1
+        self.sim.publish_root()
+
+        # Make a successful update of valid metadata which stores it in cache
+        self._run_refresh()
+
+        # Modify cached intermediate root v2 so that it's no longer signed correctly
+        root_path = os.path.join(self.metadata_dir, "root_history", "2.root.json")
+        md = Metadata.from_file(root_path)
+        md.signatures.clear()
+        md.to_file(root_path)
+
+        # Clear statistics for metadata requests
+        self.sim.fetch_tracker.metadata.clear()
+
+        # Update again, assert that intermediate root v2 was downloaded again
+        self._run_refresh()
+
+        expected_calls = [("root", 2), ("root", 4), ("timestamp", None)]
+        self.assertListEqual(self.sim.fetch_tracker.metadata, expected_calls)
+
+        # Clear statistics for metadata requests
+        self.sim.fetch_tracker.metadata.clear()
+
+        # Update again, this time assert that intermediate root v2 was used from cache
+        self._run_refresh()
+
+        expected_calls = [("root", 4), ("timestamp", None)]
         self.assertListEqual(self.sim.fetch_tracker.metadata, expected_calls)
 
     def test_expired_metadata(self) -> None:
