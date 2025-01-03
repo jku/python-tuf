@@ -161,7 +161,6 @@ class TestUpdater(unittest.TestCase):
         # top-level targets are already in local cache (but remove others)
         os.remove(os.path.join(self.client_directory, "role1.json"))
         os.remove(os.path.join(self.client_directory, "role2.json"))
-        os.remove(os.path.join(self.client_directory, "1.root.json"))
 
         # top-level metadata is in local directory already
         self.updater.refresh()
@@ -208,7 +207,6 @@ class TestUpdater(unittest.TestCase):
         os.remove(os.path.join(self.client_directory, "targets.json"))
         os.remove(os.path.join(self.client_directory, "role1.json"))
         os.remove(os.path.join(self.client_directory, "role2.json"))
-        os.remove(os.path.join(self.client_directory, "1.root.json"))
         self._assert_files([Root.type])
 
         self.updater.refresh()
@@ -233,7 +231,6 @@ class TestUpdater(unittest.TestCase):
         os.remove(os.path.join(self.client_directory, "targets.json"))
         os.remove(os.path.join(self.client_directory, "role1.json"))
         os.remove(os.path.join(self.client_directory, "role2.json"))
-        os.remove(os.path.join(self.client_directory, "1.root.json"))
         self._assert_files(["root"])
 
         # Get targetinfo for 'file3.txt' listed in the delegated role1
