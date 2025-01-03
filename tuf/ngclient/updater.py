@@ -120,11 +120,12 @@ class Updater:
             # if no root was provided, use the cached non-versioned root.json
             bootstrap = self._load_local_metadata(Root.type)
 
-        # Load the initial root, make sure it's cached in root_history/
+        # Load the initial root, make sure it's cached
         self._trusted_set = TrustedMetadataSet(
             bootstrap, self.config.envelope_type
         )
         self._persist_root(self._trusted_set.root.version, bootstrap)
+        self._update_root_symlink()
 
     def refresh(self) -> None:
         """Refresh top-level metadata.
@@ -314,7 +315,8 @@ class Updater:
     def _persist_root(self, version: int, data: bytes) -> None:
         """Write root metadata to disk atomically to avoid data loss.
 
-        Use a filename prefixed with version (e.g. "1.root.json").
+        The metadata is stored with version prefix (e.g.
+        "root_history/1.root.json").
         """
         rootdir = os.path.join(self._dir, "root_history")
         with contextlib.suppress(FileExistsError):
@@ -339,6 +341,15 @@ class Updater:
                 with contextlib.suppress(FileNotFoundError):
                     os.remove(temp_file_name)
             raise e
+
+    def _update_root_symlink(self) -> None:
+        """Symlink root.json to current trusted root version in root_history/"""
+        linkname = os.path.join(self._dir, "root.json")
+        version = self._trusted_set.root.version
+        current = os.path.join("root_history", f"{version}.root.json")
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(linkname)
+        os.symlink(current, linkname)
 
     def _load_root(self) -> None:
         """Load root metadata.
@@ -384,12 +395,7 @@ class Updater:
                     break
         finally:
             # Make sure the non-versioned root.json links to current version
-            linkname = os.path.join(self._dir, "root.json")
-            version = self._trusted_set.root.version
-            current = os.path.join("root_history", f"{version}.root.json")
-            with contextlib.suppress(FileNotFoundError):
-                os.remove(linkname)
-            os.symlink(current, linkname)
+            self._update_root_symlink()
 
     def _load_timestamp(self) -> None:
         """Load local and remote timestamp metadata."""
