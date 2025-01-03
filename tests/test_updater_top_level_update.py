@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import builtins
 import datetime
+import logging
 import os
 import sys
 import tempfile
@@ -62,10 +63,6 @@ class TestRefresh(unittest.TestCase):
 
         self.sim = RepositorySimulator()
 
-        # boostrap client with initial root metadata
-        with open(os.path.join(self.metadata_dir, "root.json"), "bw") as f:
-            f.write(self.sim.signed_roots[0])
-
         if self.dump_dir is not None:
             # create test specific dump directory
             name = self.id().split(".")[-1]
@@ -75,22 +72,13 @@ class TestRefresh(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
 
-    def _run_refresh(self) -> Updater:
+    def _run_refresh(self, skip_bootstrap:bool=False) -> Updater:
         """Create a new Updater instance and refresh"""
-        if self.dump_dir is not None:
-            self.sim.write()
-
-        updater = Updater(
-            self.metadata_dir,
-            "https://example.com/metadata/",
-            self.targets_dir,
-            "https://example.com/targets/",
-            self.sim,
-        )
+        updater = self._init_updater(skip_bootstrap)
         updater.refresh()
         return updater
 
-    def _init_updater(self) -> Updater:
+    def _init_updater(self, skip_bootstrap:bool=False) -> Updater:
         """Create a new Updater instance"""
         if self.dump_dir is not None:
             self.sim.write()
@@ -101,6 +89,7 @@ class TestRefresh(unittest.TestCase):
             self.targets_dir,
             "https://example.com/targets/",
             self.sim,
+            bootstrap=None if skip_bootstrap else self.sim.signed_roots[0]
         )
 
     def _assert_files_exist(self, roles: Iterable[str]) -> None:
@@ -126,9 +115,6 @@ class TestRefresh(unittest.TestCase):
         self.assertEqual(md.signed.version, expected_version)
 
     def test_first_time_refresh(self) -> None:
-        # Metadata dir contains only the mandatory initial root.json
-        self._assert_files_exist([Root.type])
-
         # Add one more root version to repository so that
         # refresh() updates from local trusted root (v1) to
         # remote root (v2)
@@ -142,10 +128,11 @@ class TestRefresh(unittest.TestCase):
             version = 2 if role == Root.type else None
             self._assert_content_equals(role, version)
 
-    def test_trusted_root_missing(self) -> None:
-        os.remove(os.path.join(self.metadata_dir, "root.json"))
+    def test_cached_root_missing_without_bootstrap(self) -> None:
+        # Run update without a bootstrap, with empty cache: this fails since there is no
+        # trusted root
         with self.assertRaises(OSError):
-            self._run_refresh()
+            self._run_refresh(skip_bootstrap=True)
 
         # Metadata dir is empty
         self.assertFalse(os.listdir(self.metadata_dir))
@@ -178,15 +165,15 @@ class TestRefresh(unittest.TestCase):
         self._assert_files_exist(TOP_LEVEL_ROLE_NAMES)
         self._assert_content_equals(Root.type, 3)
 
-    def test_trusted_root_unsigned(self) -> None:
-        # Local trusted root is not signed
+    def test_trusted_root_unsigned_without_bootstrap(self) -> None:
+        # Cached root is not signed, bootstrap root is not used
         root_path = os.path.join(self.metadata_dir, "root.json")
-        md_root = Metadata.from_file(root_path)
+        md_root = Metadata.from_bytes(self.sim.signed_roots[0])
         md_root.signatures.clear()
         md_root.to_file(root_path)
 
         with self.assertRaises(UnsignedMetadataError):
-            self._run_refresh()
+            self._run_refresh(skip_bootstrap=True)
 
         # The update failed, no changes in metadata
         self._assert_files_exist([Root.type])
@@ -204,10 +191,7 @@ class TestRefresh(unittest.TestCase):
             self.sim.root.version += 1
             self.sim.publish_root()
 
-        md_root = Metadata.from_file(
-            os.path.join(self.metadata_dir, "root.json")
-        )
-        initial_root_version = md_root.signed.version
+        initial_root_version = 1
 
         updater.refresh()
 
@@ -712,26 +696,18 @@ class TestRefresh(unittest.TestCase):
         updater = self._run_refresh()
         updater.get_targetinfo("non_existent_target")
 
-        # Clean up calls to open during refresh()
+        # Clear statistics for calls and metadata requests
         wrapped_open.reset_mock()
-        # Clean up fetch tracker metadata
         self.sim.fetch_tracker.metadata.clear()
 
         # Create a new updater and perform a second update while
         # the metadata is already stored in cache (metadata dir)
-        updater = Updater(
-            self.metadata_dir,
-            "https://example.com/metadata/",
-            self.targets_dir,
-            "https://example.com/targets/",
-            self.sim,
-        )
+        updater = self._init_updater()
         updater.get_targetinfo("non_existent_target")
 
         # Test that metadata is loaded from cache and not downloaded
         wrapped_open.assert_has_calls(
             [
-                call(os.path.join(self.metadata_dir, "root.json"), "rb"),
                 call(os.path.join(self.metadata_dir, "root_history/2.root.json"), "rb"),
                 call(os.path.join(self.metadata_dir, "timestamp.json"), "rb"),
                 call(os.path.join(self.metadata_dir, "snapshot.json"), "rb"),
