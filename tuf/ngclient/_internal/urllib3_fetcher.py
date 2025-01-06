@@ -79,7 +79,8 @@ class Urllib3Fetcher(FetcherInterface):
         #  - read (gap) timeout (max delay between bytes received)
         try:
             response = poolmanager.request("GET",
-                url, preload_content=False, timeout=urllib3.Timeout(connect=self.socket_timeout)
+                url, preload_content=False,
+                timeout=urllib3.Timeout(connect=self.socket_timeout)
             )
         except urllib3.exceptions.TimeoutError as e:
             raise exceptions.SlowRetrievalError from e
