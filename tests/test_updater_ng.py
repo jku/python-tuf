@@ -325,7 +325,7 @@ class TestUpdater(unittest.TestCase):
     def test_user_agent(self) -> None:
         # test default
         self.updater.refresh()
-        session = next(iter(self.updater._fetcher._sessions.values()))
+        session = next(iter(self.updater._fetcher._poolManagers.values()))
         ua = session.headers["User-Agent"]
         self.assertEqual(ua[:11], "python-tuf/")
 
@@ -338,7 +338,7 @@ class TestUpdater(unittest.TestCase):
             config=UpdaterConfig(app_user_agent="MyApp/1.2.3"),
         )
         updater.refresh()
-        session = next(iter(updater._fetcher._sessions.values()))
+        session = next(iter(updater._fetcher._poolManagers.values()))
         ua = session.headers["User-Agent"]
 
         self.assertEqual(ua[:23], "MyApp/1.2.3 python-tuf/")

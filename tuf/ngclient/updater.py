@@ -49,7 +49,7 @@ from urllib import parse
 
 from tuf.api import exceptions
 from tuf.api.metadata import Root, Snapshot, TargetFile, Targets, Timestamp
-from tuf.ngclient._internal import requests_fetcher, trusted_metadata_set
+from tuf.ngclient._internal import trusted_metadata_set, urllib3_fetcher
 from tuf.ngclient.config import EnvelopeType, UpdaterConfig
 
 if TYPE_CHECKING:
@@ -102,7 +102,7 @@ class Updater:
         if fetcher is not None:
             self._fetcher = fetcher
         else:
-            self._fetcher = requests_fetcher.RequestsFetcher(
+            self._fetcher = urllib3_fetcher.Urllib3Fetcher(
                 app_user_agent=self.config.app_user_agent
             )
 

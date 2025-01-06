@@ -1,7 +1,7 @@
 # Copyright 2021, New York University and the TUF contributors
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
-"""Unit test for RequestsFetcher."""
+"""Unit test for Urllib3Fetcher."""
 
 import io
 import logging
@@ -14,17 +14,17 @@ from collections.abc import Iterator
 from typing import Any, ClassVar
 from unittest.mock import Mock, patch
 
-import requests
+import urllib3
 
 from tests import utils
 from tuf.api import exceptions
-from tuf.ngclient import RequestsFetcher
+from tuf.ngclient import Urllib3Fetcher
 
 logger = logging.getLogger(__name__)
 
 
 class TestFetcher(unittest.TestCase):
-    """Test RequestsFetcher class."""
+    """Test Urllib3Fetcher class."""
 
     server_process_handler: ClassVar[utils.TestServerProcess]
 
@@ -58,7 +58,7 @@ class TestFetcher(unittest.TestCase):
 
     def setUp(self) -> None:
         # Instantiate a concrete instance of FetcherInterface
-        self.fetcher = RequestsFetcher()
+        self.fetcher = Urllib3Fetcher()
 
     # Simple fetch.
     def test_fetch(self) -> None:
@@ -105,11 +105,12 @@ class TestFetcher(unittest.TestCase):
         self.assertEqual(cm.exception.status_code, 404)
 
     # Response read timeout error
-    @patch.object(requests.Session, "get")
+    @patch.object(urllib3.PoolManager, "request")
     def test_response_read_timeout(self, mock_session_get: Mock) -> None:
         mock_response = Mock()
+        mock_response.status = 200
         attr = {
-            "iter_content.side_effect": requests.exceptions.ConnectionError(
+            "stream.side_effect": urllib3.exceptions.ConnectionError(
                 "Simulated timeout"
             )
         }
@@ -118,13 +119,13 @@ class TestFetcher(unittest.TestCase):
 
         with self.assertRaises(exceptions.SlowRetrievalError):
             next(self.fetcher.fetch(self.url))
-        mock_response.iter_content.assert_called_once()
+        mock_response.stream.assert_called_once()
 
     # Read/connect session timeout error
     @patch.object(
-        requests.Session,
-        "get",
-        side_effect=requests.exceptions.Timeout("Simulated timeout"),
+        urllib3.PoolManager,
+        "request",
+        side_effect=urllib3.exceptions.TimeoutError,
     )
     def test_session_get_timeout(self, mock_session_get: Mock) -> None:
         with self.assertRaises(exceptions.SlowRetrievalError):
