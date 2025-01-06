@@ -5,5 +5,5 @@ Fetcher
    :undoc-members:
    :private-members: _fetch
 
-.. autoclass:: tuf.ngclient.RequestsFetcher
+.. autoclass:: tuf.ngclient.Urllib3Fetcher
    :no-inherited-members:

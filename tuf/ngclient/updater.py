@@ -71,7 +71,7 @@ class Updater:
         target_base_url: ``Optional``; Default base URL for all remote target
             downloads. Can be individually set in ``download_target()``
         fetcher: ``Optional``; ``FetcherInterface`` implementation used to
-            download both metadata and targets. Default is ``RequestsFetcher``
+            download both metadata and targets. Default is ``Urllib3Fetcher``
         config: ``Optional``; ``UpdaterConfig`` could be used to setup common
             configuration options.
 
