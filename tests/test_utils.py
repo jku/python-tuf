@@ -19,6 +19,7 @@
 """
 
 import logging
+import os
 import socket
 import sys
 import unittest
@@ -56,7 +57,7 @@ class TestServerProcess(unittest.TestCase):
     def test_cleanup(self) -> None:
         # Test normal case
         server_process_handler = utils.TestServerProcess(
-            log=logger, server="simple_server.py"
+            log=logger, server=os.path.join(utils.TESTS_DIR, "simple_server.py")
         )
 
         server_process_handler.clean()

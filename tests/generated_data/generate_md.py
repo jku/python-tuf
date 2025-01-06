@@ -56,9 +56,6 @@ for index in range(len(keyids)):
     signers.append(CryptoSigner(private_key, key))
 
 EXPIRY = datetime(2050, 1, 1, tzinfo=timezone.utc)
-OUT_DIR = "generated_data/ed25519_metadata"
-if not os.path.exists(OUT_DIR):
-    os.mkdir(OUT_DIR)
 
 SERIALIZER = JSONSerializer()
 
@@ -80,15 +77,13 @@ def verify_generation(md: Metadata, path: str) -> None:
             )
 
 
-def generate_all_files(
-    dump: bool | None = False, verify: bool | None = False
-) -> None:
-    """Generate a new repository and optionally verify it.
+def generate_all_files(dump: bool = False) -> None:
+    """Generate a new repository or verify that output has not changed.
 
     Args:
-        dump: Wheter to dump the newly generated files.
-        verify: Whether to verify the newly generated files with the
-            local staored.
+        dump: If True, new files are generated. If False, existing files
+           are compared to generated files and an exception is raised if
+           there are differences.
     """
     md_root = Metadata(Root(expires=EXPIRY))
     md_timestamp = Metadata(Timestamp(expires=EXPIRY))
@@ -103,12 +98,16 @@ def generate_all_files(
     for i, md in enumerate([md_root, md_timestamp, md_snapshot, md_targets]):
         assert isinstance(md, Metadata)
         md.sign(signers[i])
-        path = os.path.join(OUT_DIR, f"{md.signed.type}_with_ed25519.json")
-        if verify:
-            verify_generation(md, path)
-
+        path = os.path.join(
+            utils.TESTS_DIR,
+            "generated_data",
+            "ed25519_metadata",
+            f"{md.signed.type}_with_ed25519.json",
+        )
         if dump:
             md.to_file(path, SERIALIZER)
+        else:
+            verify_generation(md, path)
 
 
 if __name__ == "__main__":

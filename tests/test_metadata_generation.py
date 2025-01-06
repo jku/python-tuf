@@ -16,7 +16,7 @@ class TestMetadataGeneration(unittest.TestCase):
     @staticmethod
     def test_compare_static_md_to_generated() -> None:
         # md_generator = MetadataGenerator("generated_data/ed25519_metadata")
-        generate_all_files(dump=False, verify=True)
+        generate_all_files(dump=False)
 
 
 # Run unit test.
