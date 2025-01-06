@@ -78,17 +78,19 @@ class Urllib3Fetcher(FetcherInterface):
         #  - connect timeout (max delay before first byte is received)
         #  - read (gap) timeout (max delay between bytes received)
         try:
-            response = poolmanager.request("GET",
-                url, preload_content=False,
-                timeout=urllib3.Timeout(connect=self.socket_timeout)
+            response = poolmanager.request(
+                "GET",
+                url,
+                preload_content=False,
+                timeout=urllib3.Timeout(connect=self.socket_timeout),
             )
         except urllib3.exceptions.TimeoutError as e:
             raise exceptions.SlowRetrievalError from e
 
         # Check response status.
         try:
-           if response.status >= 400:
-               raise urllib3.exceptions.HTTPError
+            if response.status >= 400:
+                raise urllib3.exceptions.HTTPError
         except urllib3.exceptions.HTTPError as e:
             response.close()
             status = response.status
@@ -97,7 +99,7 @@ class Urllib3Fetcher(FetcherInterface):
         return self._chunks(response)
 
     def _chunks(
-        self, response: urllib3.response.HTTPResponse
+        self, response: urllib3.response.BaseHTTPResponse
     ) -> Iterator[bytes]:
         """A generator function to be returned by fetch.
 
@@ -140,7 +142,7 @@ class Urllib3Fetcher(FetcherInterface):
             if self.app_user_agent is not None:
                 ua = f"{self.app_user_agent} {ua}"
 
-            poolmanager = urllib3.PoolManager(headers={"User-Agent" : ua})
+            poolmanager = urllib3.PoolManager(headers={"User-Agent": ua})
             self._poolManagers[poolmanager_index] = poolmanager
 
             logger.debug("Made new poolManager %s", poolmanager_index)
