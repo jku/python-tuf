@@ -79,8 +79,9 @@ class Urllib3Fetcher(FetcherInterface):
                 preload_content=False,
                 timeout=urllib3.Timeout(self.socket_timeout),
             )
-        except urllib3.exceptions.TimeoutError as e:
-            raise exceptions.SlowRetrievalError from e
+        except urllib3.exceptions.MaxRetryError as e:
+            if isinstance(e.reason, urllib3.exceptions.TimeoutError):
+                raise exceptions.SlowRetrievalError from e
 
         if response.status >= 400:
             response.close()
@@ -102,10 +103,7 @@ class Urllib3Fetcher(FetcherInterface):
 
         try:
             yield from response.stream(self.chunk_size)
-        except (
-            urllib3.exceptions.ConnectionError,
-            urllib3.exceptions.TimeoutError,
-        ) as e:
+        except urllib3.exceptions.TimeoutError as e:
             raise exceptions.SlowRetrievalError from e
 
         finally:

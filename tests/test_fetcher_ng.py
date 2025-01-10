@@ -109,11 +109,7 @@ class TestFetcher(unittest.TestCase):
     def test_response_read_timeout(self, mock_session_get: Mock) -> None:
         mock_response = Mock()
         mock_response.status = 200
-        attr = {
-            "stream.side_effect": urllib3.exceptions.ConnectionError(
-                "Simulated timeout"
-            )
-        }
+        attr = {"stream.side_effect": urllib3.exceptions.TimeoutError}
         mock_response.configure_mock(**attr)
         mock_session_get.return_value = mock_response
 
@@ -125,7 +121,11 @@ class TestFetcher(unittest.TestCase):
     @patch.object(
         urllib3.PoolManager,
         "request",
-        side_effect=urllib3.exceptions.TimeoutError,
+        side_effect=urllib3.exceptions.MaxRetryError(
+            urllib3.connectionpool.ConnectionPool("localhost"),
+            "",
+            urllib3.exceptions.TimeoutError(),
+        ),
     )
     def test_session_get_timeout(self, mock_session_get: Mock) -> None:
         with self.assertRaises(exceptions.SlowRetrievalError):
