@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
-from urllib import parse
 
 # Imports
 import urllib3
@@ -41,17 +40,17 @@ class Urllib3Fetcher(FetcherInterface):
         chunk_size: int = 400000,
         app_user_agent: str | None = None,
     ) -> None:
-        # NOTE: We use a separate urllib3.PoolManager per scheme+hostname
-        # combination, in order to reuse connections to the same hostname to
-        # improve efficiency, but avoiding sharing state between different
-        # hosts-scheme combinations to minimize subtle security issues.
-        # Some cookies may not be HTTP-safe.
-        self._poolManagers: dict[tuple[str, str], urllib3.PoolManager] = {}
-
         # Default settings
         self.socket_timeout: int = socket_timeout  # seconds
         self.chunk_size: int = chunk_size  # bytes
         self.app_user_agent = app_user_agent
+
+        # Create User-Agent.
+        ua = f"python-tuf/{tuf.__version__}"
+        if self.app_user_agent is not None:
+            ua = f"{self.app_user_agent} {ua}"
+
+        self._poolManager = urllib3.PoolManager(headers={"User-Agent": ua})
 
     def _fetch(self, url: str) -> Iterator[bytes]:
         """Fetch the contents of HTTP/HTTPS url from a remote server.
@@ -67,34 +66,28 @@ class Urllib3Fetcher(FetcherInterface):
         Returns:
             Bytes iterator
         """
-        # Get a customized session for each new schema+hostname combination.
-        poolmanager = self._get_poolmanager(url)
 
-        # Get the urllib3.PoolManager object for this URL.
-        #
         # Defer downloading the response body with preload_content=False.
         # Always set the timeout. This timeout value is interpreted by
         # urllib3 as:
         #  - connect timeout (max delay before first byte is received)
         #  - read (gap) timeout (max delay between bytes received)
         try:
-            response = poolmanager.request(
+            response = self._poolManager.request(
                 "GET",
                 url,
                 preload_content=False,
-                timeout=urllib3.Timeout(connect=self.socket_timeout),
+                timeout=urllib3.Timeout(self.socket_timeout),
             )
         except urllib3.exceptions.TimeoutError as e:
             raise exceptions.SlowRetrievalError from e
 
-        # Check response status.
-        try:
-            if response.status >= 400:
-                raise urllib3.exceptions.HTTPError
-        except urllib3.exceptions.HTTPError as e:
+        if response.status >= 400:
             response.close()
-            status = response.status
-            raise exceptions.DownloadHTTPError(str(e), status) from e
+            raise exceptions.DownloadHTTPError(
+                f"HTTP error occurred with status {response.status}",
+                response.status,
+            )
 
         return self._chunks(response)
 
@@ -116,37 +109,4 @@ class Urllib3Fetcher(FetcherInterface):
             raise exceptions.SlowRetrievalError from e
 
         finally:
-            response.close()
-
-    def _get_poolmanager(self, url: str) -> urllib3.PoolManager:
-        """Return a different customized urllib3.PoolManager per schema+hostname
-        combination.
-
-        Raises:
-            exceptions.DownloadError: When there is a problem parsing the url.
-        """
-        # Use a different urllib3.PoolManager per schema+hostname
-        # combination, to reuse connections while minimizing subtle
-        # security issues.
-        parsed_url = parse.urlparse(url)
-
-        if not parsed_url.scheme:
-            raise exceptions.DownloadError(f"Failed to parse URL {url}")
-
-        poolmanager_index = (parsed_url.scheme, parsed_url.hostname or "")
-        poolmanager = self._poolManagers.get(poolmanager_index)
-
-        if not poolmanager:
-            # no default User-Agent when creating a poolManager
-            ua = f"python-tuf/{tuf.__version__}"
-            if self.app_user_agent is not None:
-                ua = f"{self.app_user_agent} {ua}"
-
-            poolmanager = urllib3.PoolManager(headers={"User-Agent": ua})
-            self._poolManagers[poolmanager_index] = poolmanager
-
-            logger.debug("Made new poolManager %s", poolmanager_index)
-        else:
-            logger.debug("Reusing poolManager %s", poolmanager_index)
-
-        return poolmanager
+            response.release_conn()
