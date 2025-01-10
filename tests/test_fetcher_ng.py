@@ -109,11 +109,13 @@ class TestFetcher(unittest.TestCase):
     def test_response_read_timeout(self, mock_session_get: Mock) -> None:
         mock_response = Mock()
         mock_response.status = 200
-        attr = {"stream.side_effect": urllib3.exceptions.MaxRetryError(
-            urllib3.connectionpool.ConnectionPool("localhost"),
-            "",
-            urllib3.exceptions.TimeoutError(),
-        )}
+        attr = {
+            "stream.side_effect": urllib3.exceptions.MaxRetryError(
+                urllib3.connectionpool.ConnectionPool("localhost"),
+                "",
+                urllib3.exceptions.TimeoutError(),
+            )
+        }
         mock_response.configure_mock(**attr)
         mock_session_get.return_value = mock_response
 
