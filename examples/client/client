@@ -30,7 +30,11 @@ def build_metadata_dir(base_url: str) -> str:
 
 def init_tofu(base_url: str) -> bool:
     """Initialize local trusted metadata (Trust-On-First-Use) and create a
-    directory for downloads"""
+    directory for downloads
+
+    NOTE: This is unsafe and for demonstration only: the bootstrap root
+    should be deployed alongside your updater application
+    """
 
     metadata_dir = build_metadata_dir(base_url)
 
@@ -81,6 +85,9 @@ def download(base_url: str, target: str) -> bool:
         os.mkdir(DOWNLOAD_DIR)
 
     try:
+        # NOTE: initial root should be provided with ``bootstrap``  argument:
+        # This examples uses unsafe Trust-On-First-Use initialization so it is
+        # not possible here.
         updater = Updater(
             metadata_dir=metadata_dir,
             metadata_base_url=f"{base_url}/metadata/",
@@ -112,7 +119,7 @@ def download(base_url: str, target: str) -> bool:
     return True
 
 
-def main() -> None:
+def main() -> str | None:
     """Main TUF Client Example function"""
 
     client_args = argparse.ArgumentParser(description="TUF Client Example")
@@ -176,6 +183,8 @@ def main() -> None:
             return f"Failed to download {command_args.target}"
     else:
         client_args.print_help()
+
+    return None
 
 
 if __name__ == "__main__":

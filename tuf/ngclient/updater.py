@@ -12,7 +12,8 @@ secure manner: All downloaded files are verified by signed metadata.
 High-level description of ``Updater`` functionality:
   * Initializing an ``Updater`` loads and validates the trusted local root
     metadata: This root metadata is used as the source of trust for all other
-    metadata.
+    metadata. Updater should always be initialized with the ``bootstrap``
+    argument: if this is not possible, it can be initialized from cache only.
   * ``refresh()`` can optionally be called to update and load all top-level
     metadata as described in the specification, using both locally cached
     metadata and metadata downloaded from the remote repository. If refresh is
@@ -75,9 +76,9 @@ class Updater:
             download both metadata and targets. Default is ``Urllib3Fetcher``
         config: ``Optional``; ``UpdaterConfig`` could be used to setup common
             configuration options.
-        bootstrap: ``Optional``; initial root metadata. If a boostrap root is
-            not provided then the root.json in the metadata cache is used as the
-            initial root.
+        bootstrap: ``Optional``; initial root metadata. A boostrap root should
+            always be provided. If it is not, the current root.json in the
+            metadata cache is used as the initial root.
 
     Raises:
         OSError: Local root.json cannot be read
