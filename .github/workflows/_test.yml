@@ -77,6 +77,13 @@ jobs:
         run: |
           coveralls --service=github
 
+  all-tests-pass:
+    name: All tests passed
+    needs: [lint-test, tests]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "All test jobs have completed successfully."
+
   coveralls-fin:
     # Always run when all 'tests' jobs have finished even if they failed
     # TODO: Replace always() with a 'at least one job succeeded' expression
