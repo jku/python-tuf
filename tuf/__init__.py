@@ -3,5 +3,5 @@
 
 """TUF."""
 
-# This value is used in the requests user agent.
+# This value is used in the ngclient user agent.
 __version__ = "5.1.0"
