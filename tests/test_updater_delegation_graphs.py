@@ -133,10 +133,13 @@ class TestDelegations(unittest.TestCase):
         )
 
     def _assert_files_exist(self, roles: Iterable[str]) -> None:
-        """Assert that local metadata files exist for 'roles'"""
-        expected_files = sorted([f"{role}.json" for role in roles])
-        local_metadata_files = sorted(os.listdir(self.metadata_dir))
-        self.assertListEqual(local_metadata_files, expected_files)
+        """Assert that local metadata files match 'roles'"""
+        expected_files = [f"{role}.json" for role in roles]
+        found_files = [
+            e.name for e in os.scandir(self.metadata_dir) if e.is_file()
+        ]
+
+        self.assertListEqual(sorted(found_files), sorted(expected_files))
 
 
 class TestDelegationsGraphs(TestDelegations):
