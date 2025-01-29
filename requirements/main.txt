@@ -6,5 +6,5 @@
 # 'pinned.txt' is updated on GitHub with Dependabot, which
 # triggers CI/CD builds to automatically test against updated dependencies.
 #
-securesystemslib[crypto, pynacl]
+securesystemslib[crypto]
 requests

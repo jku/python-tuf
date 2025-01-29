@@ -1222,7 +1222,7 @@ class SuccinctRoles(Role):
         self.number_of_bins = 2**bit_length
         # suffix_len is calculated based on "number_of_bins - 1" as the name
         # of the last bin contains the number "number_of_bins -1" as a suffix.
-        self.suffix_len = len(f"{self.number_of_bins-1:x}")
+        self.suffix_len = len(f"{self.number_of_bins - 1:x}")
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, SuccinctRoles):

@@ -70,11 +70,6 @@ include = [
   "/setup.py",
 ]
 
-[tool.hatch.build.targets.wheel]
-# The testing phase changes the current working directory to `tests` but the test scripts import
-# from `tests` so the root directory must be added to Python's path for editable installations
-dev-mode-dirs = ["."]
-
 # Ruff section
 # Read more here: https://docs.astral.sh/ruff/linter/#rule-selection
 [tool.ruff]
@@ -159,3 +154,6 @@ exclude_also = [
     # imports for mypy only
     "if TYPE_CHECKING",
 ]
+[tool.coverage.run]
+branch = true
+omit = [ "tests/*" ]

@@ -11,7 +11,7 @@ import shutil
 import sys
 import tempfile
 import unittest
-from typing import Callable, ClassVar
+from typing import TYPE_CHECKING, Callable, ClassVar
 from unittest.mock import MagicMock, patch
 
 from securesystemslib.signer import Signer
@@ -27,6 +27,9 @@ from tuf.api.metadata import (
     Timestamp,
 )
 from tuf.ngclient import Updater, UpdaterConfig
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 logger = logging.getLogger(__name__)
 
@@ -149,11 +152,14 @@ class TestUpdater(unittest.TestCase):
             )
         )
 
-    def _assert_files(self, roles: list[str]) -> None:
-        """Assert that local metadata files exist for 'roles'"""
+    def _assert_files_exist(self, roles: Iterable[str]) -> None:
+        """Assert that local metadata files match 'roles'"""
         expected_files = [f"{role}.json" for role in roles]
-        client_files = sorted(os.listdir(self.client_directory))
-        self.assertEqual(client_files, expected_files)
+        found_files = [
+            e.name for e in os.scandir(self.client_directory) if e.is_file()
+        ]
+
+        self.assertListEqual(sorted(found_files), sorted(expected_files))
 
     def test_refresh_and_download(self) -> None:
         # Test refresh without consistent targets - targets without hash prefix.
@@ -161,18 +167,17 @@ class TestUpdater(unittest.TestCase):
         # top-level targets are already in local cache (but remove others)
         os.remove(os.path.join(self.client_directory, "role1.json"))
         os.remove(os.path.join(self.client_directory, "role2.json"))
-        os.remove(os.path.join(self.client_directory, "1.root.json"))
 
         # top-level metadata is in local directory already
         self.updater.refresh()
-        self._assert_files(
+        self._assert_files_exist(
             [Root.type, Snapshot.type, Targets.type, Timestamp.type]
         )
 
         # Get targetinfos, assert that cache does not contain files
         info1 = self.updater.get_targetinfo("file1.txt")
         assert isinstance(info1, TargetFile)
-        self._assert_files(
+        self._assert_files_exist(
             [Root.type, Snapshot.type, Targets.type, Timestamp.type]
         )
 
@@ -186,7 +191,7 @@ class TestUpdater(unittest.TestCase):
             Targets.type,
             Timestamp.type,
         ]
-        self._assert_files(expected_files)
+        self._assert_files_exist(expected_files)
         self.assertIsNone(self.updater.find_cached_target(info1))
         self.assertIsNone(self.updater.find_cached_target(info3))
 
@@ -208,11 +213,10 @@ class TestUpdater(unittest.TestCase):
         os.remove(os.path.join(self.client_directory, "targets.json"))
         os.remove(os.path.join(self.client_directory, "role1.json"))
         os.remove(os.path.join(self.client_directory, "role2.json"))
-        os.remove(os.path.join(self.client_directory, "1.root.json"))
-        self._assert_files([Root.type])
+        self._assert_files_exist([Root.type])
 
         self.updater.refresh()
-        self._assert_files(
+        self._assert_files_exist(
             [Root.type, Snapshot.type, Targets.type, Timestamp.type]
         )
 
@@ -225,7 +229,7 @@ class TestUpdater(unittest.TestCase):
             Targets.type,
             Timestamp.type,
         ]
-        self._assert_files(expected_files)
+        self._assert_files_exist(expected_files)
 
     def test_implicit_refresh_with_only_local_root(self) -> None:
         os.remove(os.path.join(self.client_directory, "timestamp.json"))
@@ -233,13 +237,12 @@ class TestUpdater(unittest.TestCase):
         os.remove(os.path.join(self.client_directory, "targets.json"))
         os.remove(os.path.join(self.client_directory, "role1.json"))
         os.remove(os.path.join(self.client_directory, "role2.json"))
-        os.remove(os.path.join(self.client_directory, "1.root.json"))
-        self._assert_files(["root"])
+        self._assert_files_exist(["root"])
 
         # Get targetinfo for 'file3.txt' listed in the delegated role1
         self.updater.get_targetinfo("file3.txt")
         expected_files = ["role1", "root", "snapshot", "targets", "timestamp"]
-        self._assert_files(expected_files)
+        self._assert_files_exist(expected_files)
 
     def test_both_target_urls_not_set(self) -> None:
         # target_base_url = None and Updater._target_base_url = None

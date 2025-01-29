@@ -10,8 +10,7 @@ import os
 import sys
 import tempfile
 import unittest
-from collections.abc import Iterator
-from typing import Any, ClassVar
+from typing import ClassVar
 from unittest.mock import Mock, patch
 
 import urllib3
@@ -170,11 +169,11 @@ class TestFetcher(unittest.TestCase):
             self.assertEqual(self.file_length, temp_file.tell())
 
     # Download a file bigger than expected
-    def test_download_file_length_mismatch(self) -> Iterator[Any]:
-        with self.assertRaises(exceptions.DownloadLengthMismatchError):
-            # Force download_file to execute and raise the error since it is a
-            # context manager and returns Iterator[IO]
-            yield self.fetcher.download_file(self.url, self.file_length - 4)
+    def test_download_file_length_mismatch(self) -> None:
+        with self.assertRaises(
+            exceptions.DownloadLengthMismatchError
+        ), self.fetcher.download_file(self.url, self.file_length - 4):
+            pass  # we never get here as download_file() raises
 
 
 # Run unit test.

@@ -74,14 +74,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_FLAG_NAME: ${{ runner.os }} / Python ${{ matrix.python-version }}
           COVERALLS_PARALLEL: true
-        # Use cp workaround to publish coverage reports with relative paths
-        # FIXME: Consider refactoring the tests to not require the test
-        # aggregation script being invoked from the `tests` directory, so
-        # that `.coverage` is written to and .coveragrc can also reside in
-        # the project root directory as is the convention.
         run: |
-          cp tests/.coverage .
-          coveralls --service=github --rcfile=tests/.coveragerc
+          coveralls --service=github
+
+  all-tests-pass:
+    name: All tests passed
+    needs: [lint-test, tests]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "All test jobs have completed successfully."
 
   coveralls-fin:
     # Always run when all 'tests' jobs have finished even if they failed
