@@ -98,7 +98,10 @@ class CanonicalJSONSerializer(SignedSerializer):
         """
         try:
             signed_dict = signed_obj.to_dict()
-            canonical_bytes = encode_canonical(signed_dict).encode("utf-8")
+            canon_str = encode_canonical(signed_dict)
+            # encode_canonical cannot return None if output_function is not set
+            assert canon_str is not None  # noqa: S101
+            canonical_bytes = canon_str.encode("utf-8")
 
         except Exception as e:
             raise SerializationError from e
