@@ -81,7 +81,7 @@ class SimpleEnvelope(Generic[T], BaseSimpleEnvelope):
         except Exception as e:
             raise DeserializationError from e
 
-        return envelope
+        return cast(SimpleEnvelope[T], envelope)
 
     def to_bytes(self) -> bytes:
         """Return envelope as JSON bytes.
