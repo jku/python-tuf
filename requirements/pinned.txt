@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements/pinned.txt --strip-extras requirements/main.txt
 #
-certifi==2024.12.14
+certifi==2025.1.31
     # via requests
 cffi==1.17.1
     # via cryptography
