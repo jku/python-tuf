@@ -43,12 +43,11 @@ class Urllib3Fetcher(FetcherInterface):
         # Default settings
         self.socket_timeout: int = socket_timeout  # seconds
         self.chunk_size: int = chunk_size  # bytes
-        self.app_user_agent = app_user_agent
 
         # Create User-Agent.
         ua = f"python-tuf/{tuf.__version__}"
-        if self.app_user_agent is not None:
-            ua = f"{self.app_user_agent} {ua}"
+        if app_user_agent is not None:
+            ua = f"{app_user_agent} {ua}"
 
         self._poolManager = urllib3.PoolManager(headers={"User-Agent": ua})
 
