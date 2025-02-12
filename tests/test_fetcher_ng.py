@@ -94,7 +94,7 @@ class TestFetcher(unittest.TestCase):
     # Incorrect URL parsing
     def test_url_parsing(self) -> None:
         with self.assertRaises(exceptions.DownloadError):
-            self.fetcher.fetch("missing-scheme-and-hostname-in-url")
+            self.fetcher.fetch("http://invalid/")
 
     # File not found error
     def test_http_error(self) -> None:

@@ -316,7 +316,7 @@ class TestUpdater(unittest.TestCase):
     def test_invalid_target_base_url(self) -> None:
         info = TargetFile(1, {"sha256": ""}, "targetpath")
         with self.assertRaises(exceptions.DownloadError):
-            self.updater.download_target(info, target_base_url="invalid_url")
+            self.updater.download_target(info, target_base_url="http://invalid/")
 
     def test_non_existing_target_file(self) -> None:
         info = TargetFile(1, {"sha256": ""}, "/non_existing_file.txt")
