@@ -44,7 +44,6 @@ classifiers = [
   "Topic :: Software Development",
 ]
 dependencies = [
-  "requests>=2.19.1",
   "securesystemslib~=1.0",
   "urllib3<3,>=1.21.1",
 ]
