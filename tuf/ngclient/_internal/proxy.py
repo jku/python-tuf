@@ -38,8 +38,9 @@ class ProxyEnvironment:
         if no_proxy is None:
             self._no_proxy_hosts = []
         else:
+            # split by comma, remove leading periods
             self._no_proxy_hosts = [
-                h for h in no_proxy.replace(" ", "").split(",") if h
+                h.lstrip(".") for h in no_proxy.replace(" ", "").split(",") if h
             ]
 
     def _get_proxy(self, scheme: str | None, host: str | None) -> str | None:
@@ -50,10 +51,12 @@ class ProxyEnvironment:
             # even for schemes that don't require host (like file)
             return None
 
-        # does host match "no_proxy" hosts?
+        # does host match any of the "no_proxy" hosts?
         for no_proxy_host in self._no_proxy_hosts:
-            # exact hostname match or parent domain match
-            if host == no_proxy_host or host.endswith(f".{no_proxy_host}"):
+            # wildcard match, exact hostname match, or parent domain match
+            if no_proxy_host in ("*", host) or host.endswith(
+                f".{no_proxy_host}"
+            ):
                 return None
 
         if scheme in self._proxies:

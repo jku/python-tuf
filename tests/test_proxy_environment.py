@@ -138,6 +138,35 @@ class TestProxyEnvironment(unittest.TestCase):
         self.assert_pool_managers(env, [None, "http://localhost:9999"])
 
     @patch("tuf.ngclient._internal.proxy.getproxies")
+    def test_no_proxy_wildcard(self, mock_getproxies: Mock) -> None:
+        mock_getproxies.return_value = {
+            "https": "http://localhost:8888",
+            "no": "*",
+        }
+
+        env = ProxyEnvironment()
+        env.get_pool_manager("https", "example.com")
+        env.get_pool_manager("https", "differentsite.com")
+        env.get_pool_manager("https", "subdomain.example.com")
+
+        # There is a single pool manager, no proxies
+        self.assert_pool_managers(env, [None])
+
+    @patch("tuf.ngclient._internal.proxy.getproxies")
+    def test_no_proxy_leading_dot(self, mock_getproxies: Mock) -> None:
+        mock_getproxies.return_value = {
+            "https": "http://localhost:8888",
+            "no": ".example.com",
+        }
+
+        env = ProxyEnvironment()
+        env.get_pool_manager("https", "example.com")
+        env.get_pool_manager("https", "subdomain.example.com")
+
+        # There is a single pool manager, no proxies
+        self.assert_pool_managers(env, [None])
+
+    @patch("tuf.ngclient._internal.proxy.getproxies")
     def test_all_proxy_set(self, mock_getproxies: Mock) -> None:
         mock_getproxies.return_value = {
             "all": "http://localhost:8888",
