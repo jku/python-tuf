@@ -3,6 +3,8 @@
 
 """Test ngclient ProxyEnvironment"""
 
+from __future__ import annotations
+
 import sys
 import unittest
 from unittest.mock import Mock, patch

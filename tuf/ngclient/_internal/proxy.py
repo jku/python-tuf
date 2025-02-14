@@ -3,6 +3,8 @@
 
 """Proxy environment variable handling with Urllib3"""
 
+from __future__ import annotations
+
 from typing import Any
 from urllib.request import getproxies
 
