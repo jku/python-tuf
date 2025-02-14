@@ -9,7 +9,8 @@ build-backend = "hatchling.build"
 name = "tuf"
 description = "A secure updater framework for Python"
 readme = "README.md"
-license = { text = "MIT OR Apache-2.0" }
+license = "Apache-2.0 OR MIT"
+license-files = ["LICENSE", "LICENSE-MIT"]
 requires-python = ">=3.8"
 authors = [
   { email = "theupdateframework@googlegroups.com" },
@@ -26,8 +27,6 @@ keywords = [
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: Apache Software License",
-  "License :: OSI Approved :: MIT License",
   "Natural Language :: English",
   "Operating System :: MacOS :: MacOS X",
   "Operating System :: Microsoft :: Windows",
