@@ -5,10 +5,6 @@
 library.
 """
 
-# requests_fetcher is public but comes from _internal for now (because
-# sigstore-python 1.0 still uses the module from there). requests_fetcher
-# can be moved out of _internal once sigstore-python 1.0 is not relevant.
-
 from __future__ import annotations
 
 import logging

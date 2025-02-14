@@ -155,4 +155,4 @@ exclude_also = [
 ]
 [tool.coverage.run]
 branch = true
-omit = [ "tests/*", "tuf/ngclient/_internal/requests_fetcher.py" ]
+omit = [ "tests/*", "tuf/ngclient/requests_fetcher.py" ]
