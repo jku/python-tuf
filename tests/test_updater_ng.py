@@ -316,7 +316,9 @@ class TestUpdater(unittest.TestCase):
     def test_invalid_target_base_url(self) -> None:
         info = TargetFile(1, {"sha256": ""}, "targetpath")
         with self.assertRaises(exceptions.DownloadError):
-            self.updater.download_target(info, target_base_url="invalid_url")
+            self.updater.download_target(
+                info, target_base_url="http://invalid/"
+            )
 
     def test_non_existing_target_file(self) -> None:
         info = TargetFile(1, {"sha256": ""}, "/non_existing_file.txt")
@@ -328,7 +330,7 @@ class TestUpdater(unittest.TestCase):
     def test_user_agent(self) -> None:
         # test default
         self.updater.refresh()
-        session = next(iter(self.updater._fetcher._sessions.values()))
+        session = self.updater._fetcher._poolManager
         ua = session.headers["User-Agent"]
         self.assertEqual(ua[:11], "python-tuf/")
 
@@ -341,7 +343,7 @@ class TestUpdater(unittest.TestCase):
             config=UpdaterConfig(app_user_agent="MyApp/1.2.3"),
         )
         updater.refresh()
-        session = next(iter(updater._fetcher._sessions.values()))
+        session = updater._fetcher._poolManager
         ua = session.headers["User-Agent"]
 
         self.assertEqual(ua[:23], "MyApp/1.2.3 python-tuf/")

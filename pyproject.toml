@@ -47,6 +47,7 @@ classifiers = [
 dependencies = [
   "requests>=2.19.1",
   "securesystemslib~=1.0",
+  "urllib3<3,>=1.21.1",
 ]
 dynamic = ["version"]
 
@@ -156,4 +157,4 @@ exclude_also = [
 ]
 [tool.coverage.run]
 branch = true
-omit = [ "tests/*" ]
+omit = [ "tests/*", "tuf/ngclient/_internal/requests_fetcher.py" ]
