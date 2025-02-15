@@ -1,3 +1,4 @@
 -r build.txt
 -r test.txt
 -r lint.txt
+-e .
