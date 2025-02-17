@@ -5,6 +5,7 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 
 import argparse
+import logging
 import os
 import shutil
 import sys
@@ -49,7 +50,8 @@ def download_target(
     target_info = updater.get_targetinfo(target_name)
     if not target_info:
         raise RuntimeError(f"{target_name} not found in repository")
-    updater.download_target(target_info)
+    if not updater.find_cached_target(target_info):
+        updater.download_target(target_info)
 
 
 def main() -> int:
@@ -61,6 +63,7 @@ def main() -> int:
     parser.add_argument("--target-name", required=False)
     parser.add_argument("--target-dir", required=False)
     parser.add_argument("--target-base-url", required=False)
+    parser.add_argument("-v", "--verbose", action="count", default=0)
 
     sub_command = parser.add_subparsers(dest="sub_command")
     init_parser = sub_command.add_parser(
@@ -80,6 +83,15 @@ def main() -> int:
     )
 
     command_args = parser.parse_args()
+
+    if command_args.verbose <= 1:
+        loglevel = logging.WARNING
+    elif command_args.verbose == 2:
+        loglevel = logging.INFO
+    else:
+        loglevel = logging.DEBUG
+
+    logging.basicConfig(level=loglevel)
 
     # initialize the TUF Client Example infrastructure
     if command_args.sub_command == "init":
