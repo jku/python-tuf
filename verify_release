@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright 2022, TUF contributors
 # SPDX-License-Identifier: MIT OR Apache-2.0
@@ -9,6 +9,8 @@ Builds a release from current commit and verifies that the release artifacts
 on GitHub and PyPI match the built release artifacts.
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import os
@@ -16,7 +18,6 @@ import subprocess
 import sys
 from filecmp import cmp
 from tempfile import TemporaryDirectory
-from typing import Optional
 
 try:
     import build as _  # type: ignore[import-not-found] # noqa: F401
@@ -148,7 +149,7 @@ def verify_pypi_release(version: str, compare_dir: str) -> bool:
 
 
 def sign_release_artifacts(
-    version: str, build_dir: str, key_id: Optional[str] = None
+    version: str, build_dir: str, key_id: str | None = None
 ) -> None:
     """Sign built release artifacts with gpg and write signature files to cwd"""
     sdist = f"{PYPI_PROJECT}-{version}.tar.gz"

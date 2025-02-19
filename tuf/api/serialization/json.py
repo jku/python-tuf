@@ -11,8 +11,9 @@ verification.
 # We should not have shadowed stdlib json but that milk spilled already
 # ruff: noqa: A005
 
+from __future__ import annotations
+
 import json
-from typing import Optional
 
 from securesystemslib.formats import encode_canonical
 
@@ -56,7 +57,7 @@ class JSONSerializer(MetadataSerializer):
 
     """
 
-    def __init__(self, compact: bool = False, validate: Optional[bool] = False):
+    def __init__(self, compact: bool = False, validate: bool | None = False):
         self.compact = compact
         self.validate = validate
 

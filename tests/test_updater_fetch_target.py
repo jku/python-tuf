@@ -5,12 +5,13 @@
 target files storing/loading from cache.
 """
 
+from __future__ import annotations
+
 import os
 import sys
 import tempfile
 import unittest
 from dataclasses import dataclass
-from typing import Optional
 
 from tests import utils
 from tests.repository_simulator import RepositorySimulator
@@ -30,7 +31,7 @@ class TestFetchTarget(unittest.TestCase):
     """Test ngclient downloading and caching target files."""
 
     # set dump_dir to trigger repository state dumps
-    dump_dir: Optional[str] = None
+    dump_dir: str | None = None
 
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
