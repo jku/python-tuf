@@ -3,9 +3,10 @@
 
 """Configuration options for ``Updater`` class."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Flag, unique
-from typing import Optional
 
 
 @unique
@@ -52,4 +53,4 @@ class UpdaterConfig:
     targets_max_length: int = 5000000  # bytes
     prefix_targets_with_hash: bool = True
     envelope_type: EnvelopeType = EnvelopeType.METADATA
-    app_user_agent: Optional[str] = None
+    app_user_agent: str | None = None

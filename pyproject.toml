@@ -81,7 +81,6 @@ ignore = [
     # Rulesets we do not use at this moment
     "COM",
     "EM",
-    "FA",
     "FIX",
     "FBT",
     "PERF",

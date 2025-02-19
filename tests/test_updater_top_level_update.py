@@ -3,15 +3,16 @@
 
 """Test ngclient Updater top-level metadata update workflow"""
 
+from __future__ import annotations
+
 import builtins
 import datetime
 import os
 import sys
 import tempfile
 import unittest
-from collections.abc import Iterable
 from datetime import timezone
-from typing import Optional
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, call, patch
 
 import freezegun
@@ -37,13 +38,16 @@ from tuf.api.metadata import (
 )
 from tuf.ngclient import Updater
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
 
 class TestRefresh(unittest.TestCase):
     """Test update of top-level metadata following
     'Detailed client workflow' in the specification."""
 
     # set dump_dir to trigger repository state dumps
-    dump_dir: Optional[str] = None
+    dump_dir: str | None = None
 
     past_datetime = datetime.datetime.now(timezone.utc).replace(
         microsecond=0
@@ -109,7 +113,7 @@ class TestRefresh(unittest.TestCase):
         self.assertListEqual(sorted(found_files), sorted(expected_files))
 
     def _assert_content_equals(
-        self, role: str, version: Optional[int] = None
+        self, role: str, version: int | None = None
     ) -> None:
         """Assert that local file content is the expected"""
         expected_content = self.sim.fetch_metadata(role, version)
