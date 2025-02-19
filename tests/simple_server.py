@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright 2012 - 2017, New York University and the TUF contributors
 # SPDX-License-Identifier: MIT OR Apache-2.0
