@@ -92,7 +92,7 @@ class TestDelegations(unittest.TestCase):
             self.sim.write()
 
     def teardown_subtest(self) -> None:
-        utils.cleanup_dir(self.metadata_dir)
+        utils.cleanup_metadata_dir(self.metadata_dir)
 
     def _init_repo(self, test_case: DelegationsTestCase) -> None:
         """Create a new RepositorySimulator instance and

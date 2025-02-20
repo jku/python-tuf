@@ -155,12 +155,16 @@ def configure_test_logging(argv: list[str]) -> None:
     logging.basicConfig(level=loglevel)
 
 
-def cleanup_dir(path: str) -> None:
-    """Delete all files inside a directory"""
-    for filepath in [
-        os.path.join(path, filename) for filename in os.listdir(path)
-    ]:
-        os.remove(filepath)
+def cleanup_metadata_dir(path: str) -> None:
+    """Delete the local metadata dir"""
+    with os.scandir(path) as it:
+        for entry in it:
+            if entry.name == "root_history":
+                cleanup_metadata_dir(entry.path)
+            elif entry.name.endswith(".json"):
+                os.remove(entry.path)
+            else:
+                raise ValueError(f"Unexpected local metadata file {entry.path}")
 
 
 class TestServerProcess:

@@ -11,7 +11,8 @@ import sys
 import traceback
 from hashlib import sha256
 from pathlib import Path
-from urllib import request
+
+import urllib3
 
 from tuf.api.exceptions import DownloadError, RepositoryError
 from tuf.ngclient import Updater
@@ -29,18 +30,29 @@ def build_metadata_dir(base_url: str) -> str:
 
 def init_tofu(base_url: str) -> bool:
     """Initialize local trusted metadata (Trust-On-First-Use) and create a
-    directory for downloads"""
+    directory for downloads
+
+    NOTE: This is unsafe and for demonstration only: the bootstrap root
+    should be deployed alongside your updater application
+    """
+
     metadata_dir = build_metadata_dir(base_url)
 
     if not os.path.isdir(metadata_dir):
         os.makedirs(metadata_dir)
 
-    root_url = f"{base_url}/metadata/1.root.json"
-    try:
-        request.urlretrieve(root_url, f"{metadata_dir}/root.json")
-    except OSError:
-        print(f"Failed to download initial root from {root_url}")
+    response = urllib3.request("GET", f"{base_url}/metadata/1.root.json")
+    if response.status != 200:
+        print(f"Failed to download initial root {base_url}/metadata/1.root.json")
         return False
+
+    Updater(
+        metadata_dir=metadata_dir,
+        metadata_base_url=f"{base_url}/metadata/",
+        target_base_url=f"{base_url}/targets/",
+        target_dir=DOWNLOAD_DIR,
+        bootstrap=response.data,
+    )
 
     print(f"Trust-on-First-Use: Initialized new root in {metadata_dir}")
     return True
@@ -73,6 +85,9 @@ def download(base_url: str, target: str) -> bool:
         os.mkdir(DOWNLOAD_DIR)
 
     try:
+        # NOTE: initial root should be provided with ``bootstrap``  argument:
+        # This examples uses unsafe Trust-On-First-Use initialization so it is
+        # not possible here.
         updater = Updater(
             metadata_dir=metadata_dir,
             metadata_base_url=f"{base_url}/metadata/",
@@ -104,7 +119,7 @@ def download(base_url: str, target: str) -> bool:
     return True
 
 
-def main() -> None:
+def main() -> str | None:
     """Main TUF Client Example function"""
 
     client_args = argparse.ArgumentParser(description="TUF Client Example")
@@ -168,6 +183,8 @@ def main() -> None:
             return f"Failed to download {command_args.target}"
     else:
         client_args.print_help()
+
+    return None
 
 
 if __name__ == "__main__":

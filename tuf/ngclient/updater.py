@@ -12,7 +12,8 @@ secure manner: All downloaded files are verified by signed metadata.
 High-level description of ``Updater`` functionality:
   * Initializing an ``Updater`` loads and validates the trusted local root
     metadata: This root metadata is used as the source of trust for all other
-    metadata.
+    metadata. Updater should always be initialized with the ``bootstrap``
+    argument: if this is not possible, it can be initialized from cache only.
   * ``refresh()`` can optionally be called to update and load all top-level
     metadata as described in the specification, using both locally cached
     metadata and metadata downloaded from the remote repository. If refresh is
@@ -49,9 +50,9 @@ from urllib import parse
 
 from tuf.api import exceptions
 from tuf.api.metadata import Root, Snapshot, TargetFile, Targets, Timestamp
-from tuf.ngclient import urllib3_fetcher
-from tuf.ngclient._internal import trusted_metadata_set
+from tuf.ngclient._internal.trusted_metadata_set import TrustedMetadataSet
 from tuf.ngclient.config import EnvelopeType, UpdaterConfig
+from tuf.ngclient.urllib3_fetcher import Urllib3Fetcher
 
 if TYPE_CHECKING:
     from tuf.ngclient.fetcher import FetcherInterface
@@ -75,6 +76,9 @@ class Updater:
             download both metadata and targets. Default is ``Urllib3Fetcher``
         config: ``Optional``; ``UpdaterConfig`` could be used to setup common
             configuration options.
+        bootstrap: ``Optional``; initial root metadata. A boostrap root should
+            always be provided. If it is not, the current root.json in the
+            metadata cache is used as the initial root.
 
     Raises:
         OSError: Local root.json cannot be read
@@ -89,6 +93,7 @@ class Updater:
         target_base_url: str | None = None,
         fetcher: FetcherInterface | None = None,
         config: UpdaterConfig | None = None,
+        bootstrap: bytes | None = None,
     ):
         self._dir = metadata_dir
         self._metadata_base_url = _ensure_trailing_slash(metadata_base_url)
@@ -99,14 +104,12 @@ class Updater:
             self._target_base_url = _ensure_trailing_slash(target_base_url)
 
         self.config = config or UpdaterConfig()
-
         if fetcher is not None:
             self._fetcher = fetcher
         else:
-            self._fetcher = urllib3_fetcher.Urllib3Fetcher(
+            self._fetcher = Urllib3Fetcher(
                 app_user_agent=self.config.app_user_agent
             )
-
         supported_envelopes = [EnvelopeType.METADATA, EnvelopeType.SIMPLE]
         if self.config.envelope_type not in supported_envelopes:
             raise ValueError(
@@ -114,12 +117,16 @@ class Updater:
                 f"got '{self.config.envelope_type}'"
             )
 
-        # Read trusted local root metadata
-        data = self._load_local_metadata(Root.type)
+        if not bootstrap:
+            # if no root was provided, use the cached non-versioned root.json
+            bootstrap = self._load_local_metadata(Root.type)
 
-        self._trusted_set = trusted_metadata_set.TrustedMetadataSet(
-            data, self.config.envelope_type
+        # Load the initial root, make sure it's cached
+        self._trusted_set = TrustedMetadataSet(
+            bootstrap, self.config.envelope_type
         )
+        self._persist_root(self._trusted_set.root.version, bootstrap)
+        self._update_root_symlink()
 
     def refresh(self) -> None:
         """Refresh top-level metadata.
@@ -296,12 +303,32 @@ class Updater:
             return f.read()
 
     def _persist_metadata(self, rolename: str, data: bytes) -> None:
-        """Write metadata to disk atomically to avoid data loss."""
-        temp_file_name: str | None = None
+        """Write metadata to disk atomically to avoid data loss.
+
+        Use a filename _not_ prefixed with version (e.g. "timestamp.json")
+        . Encode the rolename to avoid issues with e.g. path separators
+        """
+
+        encoded_name = parse.quote(rolename, "")
+        filename = os.path.join(self._dir, f"{encoded_name}.json")
+        self._persist_file(filename, data)
+
+    def _persist_root(self, version: int, data: bytes) -> None:
+        """Write root metadata to disk atomically to avoid data loss.
+
+        The metadata is stored with version prefix (e.g.
+        "root_history/1.root.json").
+        """
+        rootdir = os.path.join(self._dir, "root_history")
+        with contextlib.suppress(FileExistsError):
+            os.mkdir(rootdir)
+        self._persist_file(os.path.join(rootdir, f"{version}.root.json"), data)
+
+    def _persist_file(self, filename: str, data: bytes) -> None:
+        """Write a file to disk atomically to avoid data loss."""
+        temp_file_name = None
+
         try:
-            # encode the rolename to avoid issues with e.g. path separators
-            encoded_name = parse.quote(rolename, "")
-            filename = os.path.join(self._dir, f"{encoded_name}.json")
             with tempfile.NamedTemporaryFile(
                 dir=self._dir, delete=False
             ) as temp_file:
@@ -316,32 +343,60 @@ class Updater:
                     os.remove(temp_file_name)
             raise e
 
-    def _load_root(self) -> None:
-        """Load remote root metadata.
+    def _update_root_symlink(self) -> None:
+        """Symlink root.json to current trusted root version in root_history/"""
+        linkname = os.path.join(self._dir, "root.json")
+        version = self._trusted_set.root.version
+        current = os.path.join("root_history", f"{version}.root.json")
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(linkname)
+        os.symlink(current, linkname)
 
-        Sequentially load and persist on local disk every newer root metadata
-        version available on the remote.
+    def _load_root(self) -> None:
+        """Load root metadata.
+
+        Sequentially load newer root metadata versions. First try to load from
+        local cache and if that does not work, from the remote repository.
+
+        If metadata is loaded from remote repository, store it in local cache.
         """
 
         # Update the root role
         lower_bound = self._trusted_set.root.version + 1
         upper_bound = lower_bound + self.config.max_root_rotations
 
-        for next_version in range(lower_bound, upper_bound):
-            try:
-                data = self._download_metadata(
-                    Root.type,
-                    self.config.root_max_length,
-                    next_version,
-                )
-                self._trusted_set.update_root(data)
-                self._persist_metadata(Root.type, data)
+        try:
+            for next_version in range(lower_bound, upper_bound):
+                # look for next_version in local cache
+                try:
+                    root_path = os.path.join(
+                        self._dir, "root_history", f"{next_version}.root.json"
+                    )
+                    with open(root_path, "rb") as f:
+                        self._trusted_set.update_root(f.read())
+                    continue
+                except (OSError, exceptions.RepositoryError) as e:
+                    # this root did not exist locally or is invalid
+                    logger.debug("Local root is not valid: %s", e)
 
-            except exceptions.DownloadHTTPError as exception:
-                if exception.status_code not in {403, 404}:
-                    raise
-                # 404/403 means current root is newest available
-                break
+                # next_version was not found locally, try remote
+                try:
+                    data = self._download_metadata(
+                        Root.type,
+                        self.config.root_max_length,
+                        next_version,
+                    )
+                    self._trusted_set.update_root(data)
+                    self._persist_root(next_version, data)
+
+                except exceptions.DownloadHTTPError as exception:
+                    if exception.status_code not in {403, 404}:
+                        raise
+                    # 404/403 means current root is newest available
+                    break
+        finally:
+            # Make sure the non-versioned root.json links to current version
+            self._update_root_symlink()
 
     def _load_timestamp(self) -> None:
         """Load local and remote timestamp metadata."""

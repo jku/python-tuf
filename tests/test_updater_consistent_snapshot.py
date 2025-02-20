@@ -62,7 +62,7 @@ class TestConsistentSnapshot(unittest.TestCase):
         if self.dump_dir is not None:
             self.sim.write()
 
-        utils.cleanup_dir(self.metadata_dir)
+        utils.cleanup_metadata_dir(self.metadata_dir)
 
     def _init_repo(
         self, consistent_snapshot: bool, prefix_targets: bool = True

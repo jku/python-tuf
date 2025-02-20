@@ -11,6 +11,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Callable, ClassVar
 from unittest.mock import MagicMock, patch
 
