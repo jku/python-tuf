@@ -12,8 +12,8 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 
-import requests
 from securesystemslib.signer import CryptoSigner, Signer
+from urllib3 import request
 
 from tuf.api.exceptions import RepositoryError
 from tuf.api.metadata import Metadata, MetaFile, TargetFile, Targets
@@ -92,8 +92,9 @@ class LocalRepository(Repository):
 
         # Upload using "api/role"
         uri = f"{self.base_url}/api/role/{role_name}"
-        r = requests.post(uri, data=md.to_bytes(JSONSerializer()), timeout=5)
-        r.raise_for_status()
+        r = request("POST", uri, body=md.to_bytes(JSONSerializer()), timeout=5)
+        if r.status != 200:
+            raise RuntimeError(f"HTTP error {r.status}")
 
     def add_target(self, role: str, targetpath: str) -> bool:
         """Add target to roles metadata and submit new metadata version"""
@@ -124,8 +125,8 @@ class LocalRepository(Repository):
 
         data = {signer.public_key.keyid: signer.public_key.to_dict()}
         url = f"{self.base_url}/api/delegation/{role}"
-        r = requests.post(url, data=json.dumps(data), timeout=5)
-        if r.status_code != 200:
+        r = request("POST", url, body=json.dumps(data), timeout=5)
+        if r.status != 200:
             print(f"delegation failed with {r}")
             return False
 

@@ -44,7 +44,6 @@ classifiers = [
   "Topic :: Software Development",
 ]
 dependencies = [
-  "requests>=2.19.1",
   "securesystemslib~=1.0",
   "urllib3<3,>=1.21.1",
 ]
@@ -155,4 +154,4 @@ exclude_also = [
 ]
 [tool.coverage.run]
 branch = true
-omit = [ "tests/*", "tuf/ngclient/_internal/requests_fetcher.py" ]
+omit = [ "tests/*", "tuf/ngclient/requests_fetcher.py" ]

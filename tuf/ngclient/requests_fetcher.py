@@ -3,11 +3,14 @@
 
 """Provides an implementation of ``FetcherInterface`` using the Requests HTTP
 library.
-"""
 
-# requests_fetcher is public but comes from _internal for now (because
-# sigstore-python 1.0 still uses the module from there). requests_fetcher
-# can be moved out of _internal once sigstore-python 1.0 is not relevant.
+Note that this module is deprecated, and the default fetcher is
+Urllib3Fetcher:
+* RequestsFetcher is still available to make it easy to fall back to
+  previous implementation if issues are found with the Urllib3Fetcher
+* If RequestsFetcher is used, note that `requests` must be explicitly
+  depended on: python-tuf does not do that.
+"""
 
 from __future__ import annotations
 

@@ -49,7 +49,8 @@ from urllib import parse
 
 from tuf.api import exceptions
 from tuf.api.metadata import Root, Snapshot, TargetFile, Targets, Timestamp
-from tuf.ngclient._internal import trusted_metadata_set, urllib3_fetcher
+from tuf.ngclient import urllib3_fetcher
+from tuf.ngclient._internal import trusted_metadata_set
 from tuf.ngclient.config import EnvelopeType, UpdaterConfig
 
 if TYPE_CHECKING:
