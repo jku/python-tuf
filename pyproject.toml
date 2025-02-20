@@ -90,7 +90,6 @@ ignore = [
 
     # Individual rules that have been disabled
     "D400", "D415", "D213", "D205", "D202", "D107", "D407", "D413", "D212", "D104", "D406", "D105", "D411", "D401", "D200", "D203",
-    "ISC001", # incompatible with ruff formatter
     "PLR0913", "PLR2004",
 ]
 
