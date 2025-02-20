@@ -67,7 +67,7 @@ jobs:
             res = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              name: process.env.REF_NAME-rc,
+              name: process.env.REF_NAME + '-rc',
               tag_name: process.env.REF,
               body: fs.readFileSync('changelog', 'utf8'),
             });

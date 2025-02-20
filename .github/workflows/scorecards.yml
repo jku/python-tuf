@@ -37,6 +37,6 @@ jobs:
           publish_results: true
 
       - name: "Upload to code-scanning dashboard"
-        uses: github/codeql-action/upload-sarif@v3  # unpinned since this is not security critical
+        uses: github/codeql-action/upload-sarif@v3 # zizmor: ignore[unpinned-uses]
         with:
           sarif_file: results.sarif

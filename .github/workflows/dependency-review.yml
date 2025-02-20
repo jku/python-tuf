@@ -20,4 +20,4 @@ jobs:
         with:
           persist-credentials: false
       - name: 'Dependency Review'
-        uses: actions/dependency-review-action@v4 # unpinned since this is not security critical
+        uses: actions/dependency-review-action@v4 # zizmor: ignore[unpinned-uses]
