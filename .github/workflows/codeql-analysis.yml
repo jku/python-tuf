@@ -24,11 +24,13 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      with:
+        persist-credentials: false
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3 # unpinned since this is not security critical
+      uses: github/codeql-action/init@v3 # zizmor: ignore[unpinned-uses]
       with:
         languages: 'python'
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3 # unpinned since this is not security critical
+      uses: github/codeql-action/analyze@v3 # zizmor: ignore[unpinned-uses]
