@@ -19,6 +19,6 @@ jobs:
           persist-credentials: false
 
       - name: Run test suite
-        uses: theupdateframework/tuf-conformance@9bfc222a371e30ad5511eb17449f68f855fb9d8f # v2.3.0
+        uses: jku/tuf-conformance@conformance-report-for-jku # TESTING
         with:
           entrypoint: ".github/scripts/conformance-client.py"
